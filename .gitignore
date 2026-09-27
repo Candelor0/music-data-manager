@@ -1,0 +1,53 @@
+# .gitignore · 音乐数据管家
+
+# 密钥与本地配置（绝不可提交）
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# 打包产物
+build/
+dist/
+*.spec.bak
+
+# 运行期数据（配置/数据库/缓存/日志）
+data/
+*.db
+*.db-wal
+*.db-shm
+logs/
+
+# POC 临时产物
+poc/**/work*/
+
+# 样例清单（含本机路径，不提交）
+样例建议*.json
+*样例建议*.json
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 第三方二进制（体积大，用脚本下载，不入库）
+tools/fpcalc
+tools/fpcalc.exe
+
+# POC 缓存（含本机路径与指纹，不入库）
+poc/.cache/
+
+# 报告输出（含本机文件路径与元数据，不入库）
+建议报告*.md
+建议报告*.csv
+*.report.md
+
+# Windows 试用版构建中间产物（可重建，不入库）
+.build-cache/
+.build-stage/
