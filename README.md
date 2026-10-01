@@ -1,296 +1,251 @@
-# 音乐数据管家
+<div align="center">
+  <img src="assets/icon.png" width="88" alt="音乐数据管家图标">
+  <h1>音乐数据管家</h1>
+  <p><strong>让本地音乐标签更完整，让每一次修改都由你决定。</strong></p>
+  <p>声学指纹识别 · 专辑候选匹配 · AI 辅助消歧 · 人工确认 · 批次撤销</p>
+  <p>
+    <a href="https://github.com/Candelor0/music-data-manager/releases/latest"><img src="https://img.shields.io/github/v/release/Candelor0/music-data-manager?label=release" alt="最新版本"></a>
+    <img src="https://img.shields.io/badge/platform-Windows-0078D4" alt="Windows 优先">
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="GPL-3.0-or-later"></a>
+  </p>
+  <p>
+    <a href="https://github.com/Candelor0/music-data-manager/releases/latest">下载 Windows 免安装版</a>
+    · <a href="#快速上手">快速上手</a>
+    · <a href="#从源码运行">从源码运行</a>
+    · <a href="docs/development.md">开发指南</a>
+  </p>
+</div>
 
-给你的本地音乐库请一个管家：它扫一遍目录，用声学指纹和 AI 认出每首歌、每张专辑，
-把"哪些标签缺了、哪些写错了、建议改成什么"列成一张待办清单；**你点确认，它才动手**，
-而且随时能一键撤销。
+---
 
+音乐数据管家是一款管理**本地音乐文件元数据**的桌面工具。它扫描音乐库，结合声学指纹、AcoustID、MusicBrainz 和可选的 DeepSeek 模型，整理出缺失标签、专辑候选及建议修改。
 
-> **只想用，不想碰代码？** 看 [`使用说明.txt`](packaging/使用说明.txt)，或到 Releases 下载
-> Windows 免安装版。下面的内容主要是给开发和排查用的。
+**扫描和分析只生成建议；你确认写入后，程序才修改音乐标签。** 写入前建立快照，写入后保留变更记录，支持撤销上一批。
 
-| | |
+> **直接使用：** 下载 [Windows 免安装版](https://github.com/Candelor0/music-data-manager/releases/latest)，无需安装 Python。当前发布版本为 **v0.5.1**。
+> **运行源码或参与开发：** 查看[源码安装](#从源码运行)和[开发指南](docs/development.md)。
+
+## 导航
+
+[主要功能](#主要功能) · [快速上手](#快速上手) · [联网与费用](#联网与费用) · [写入与撤销](#写入与撤销) · [命令行](#命令行) · [常见问题](#常见问题) · [许可证](#许可证)
+
+## 主要功能
+
+| 功能 | 对你的音乐库有什么帮助 |
 | --- | --- |
-| 终端 | 桌面应用（PyQt5），**Windows 优先**，代码保持可移植（平台差异集中在 `adapters/`） |
-| 当前版本 | **0.5.1** —— 界面、扫描、分析、写入、撤销已全部打通，Windows 便携版已发布 |
-| 许可证 | **GPL-3.0-or-later**（继承 Picard 的 GPL-2.0-or-later；因链接 PyQt5 的 GPL v3 版，整体按 v3 分发） |
+| 声学指纹识别 | 从音频指纹寻找录音与发行版候选，辅助补全缺失标签 |
+| AI 辅助消歧 | 在多个候选间给出建议与理由；证据不足时交给你选择 |
+| 同目录互证 | 利用同一目录中多首歌曲的一致信息补全空字段，已有值有分歧时提示冲突 |
+| 按专辑裁决 | 同一专辑的候选可以整组确认，减少逐首操作 |
+| 差异预览 | 写入前检查原值和建议值；默认保留与匹配结果不一致的已有专辑名 |
+| 快照与撤销 | 保留修改记录，支持按运行或按批次回滚 |
+| 续跑与缓存 | 保存分析进度，复用指纹、候选和模型结果，减少重复请求 |
+| 图形界面与 CLI | 日常使用桌面界面，批量处理与排查可用命令行 |
 
----
+- **扫描格式：** MP3、FLAC、M4A、OGG。
+- **可写字段：** 曲名、艺术家、专辑、年份、流派、碟号；具体改动受规则与人工选择限制。
+- **平台：** Windows 优先，桌面界面基于 PyQt5；macOS 可从源码运行。
 
-## 它做什么，不做什么
+## 快速上手
 
-**做：**
+### 1. 下载并启动
 
-- 扫描音乐库（支持分层目录、中文/方括号/全角文件名），建立一次"运行"（run）并可续跑
-- 声学指纹 → AcoustID → MusicBrainz → 云端模型消歧，给出标签建议与理由
-- 利用**同目录互证**（同一个文件夹基本就是同一张专辑）先补空字段，再交给 AI
-- 待办按风险分成 4 组（安全 / 需留意 / 需裁决 / 冲突），长列表压成几行
-- 写入前给你看差异，写入后能按批次一键撤销；命令行与界面共用同一套内核
+到 [Releases](https://github.com/Candelor0/music-data-manager/releases/latest) 下载 Windows 便携包（v0.5.1 附件名为 `mds-0.5.1-windows-portable.zip`）。
 
-**不做：**
+**解压整个文件夹**，再双击 `音乐数据管家.exe`。请保留随包提供的 `_internal/`、`tools/` 和其他文件。
 
-- **不上传音频本体** —— 只发送匹配需要的元数据与指纹，且云端调用可关闭
-- **不自动改标签** —— 没有你点确认，一个字都不改
-- **不动文件本身** —— 不改名、不移动、不删除
-- **不覆盖已有的正确标签** —— 只填空、只按规则清洗，改已有值必须你逐条点头
+### 2. 选择音乐库并配置服务
 
----
+在主界面选择音乐文件夹，在**设置**页填写联系邮箱和需要的 API Key，保存后可用**测试连接**检查服务。
 
-## 图形界面：三步上手
+| 配置 | 是否需要 | 说明 |
+| --- | --- | --- |
+| 音乐库文件夹 | 必填 | 要扫描的本地目录，支持子目录 |
+| MusicBrainz 联系邮箱 | 联网查询时需要 | 用于生成服务要求的 User-Agent，无需注册 MusicBrainz 账号 |
+| AcoustID 应用 Key | 声学指纹匹配时需要 | 从 [My applications](https://acoustid.org/my-applications) 获取应用 Key |
+| DeepSeek API Key | 可选 | 从 [DeepSeek 平台](https://platform.deepseek.com) 获取，启用模型消歧后按服务用量计费 |
 
-```bash
-uv sync            # 需要 uv 与 Python 3.12
-uv run mds gui     # 打开界面（macOS 上也可以双击工程根目录的「打开界面.command」）
-```
+不配置 Key 也可扫描和分组；缺少 AcoustID Key 会跳过依赖它的指纹查询，缺少 DeepSeek Key 则不进行模型消歧。
 
-1. **设置页**填三样东西：音乐库文件夹、联系邮箱（MusicBrainz 要求，不用注册）、
-   可选的 AcoustID / DeepSeek Key（不填也能跑，只是能力少一些）。填过的密钥存在
-   **系统凭据库**里，关掉软件不用重输；「测试连接」可以分别验三个服务与 Key 是否有效。
-2. 点**开始**。第一段（扫描 + 分组）全在本地、免费；第二段才联网并用模型，**要花钱**——
-   界面常驻显示"本次预计花多少钱"，超出预算自动停下。
-3. 到**待办**页看清单：安全的可以直接批量勾选，需要你决定的逐条裁决（或按专辑一次裁决）。
-   写入前有差异预览，写入后底部有**撤销上一批**。
+> AcoustID 的**应用 Key**与账号页用于提交指纹的 Key 用途不同。查歌请使用应用 Key，详见[密钥与配置](#密钥与配置)。
 
-> 界面的配色、字号、间距集中在 `ui/theme.py`，术语解释在 `ui/glossary.py`；
-> 想换外观不需要动别的地方（有测试守着，别处不许出现颜色字面量与硬编码字号）。
+### 3. 分析、检查建议并写入
 
----
+点击**开始**，依次完成扫描、分组、分析和计划生成。界面会显示费用预估；模型调用受预算限制。
 
-## 命令行（可选）
+在待办中检查以下四组结果：
 
-界面上的「开始」按钮走的就是下面这条链路，命令行适合批量、脚本化、以及出问题时排查。
-
-### 跑一遍
-
-```bash
-uv run mds doctor                     # 环境自检（密钥只报有无，绝不回显内容）
-uv run mds run "D:\Music"             # 一键：扫描 → 分组 → 分析 → 生成计划（不写文件）
-
-# 也可以分步来
-uv run mds scan                       # 扫描（默认读 .env 的 MUSIC_LIBRARY_PATH）
-uv run mds analyze <run_id>           # 指纹 → AcoustID → MusicBrainz → 模型 → 决策
-uv run mds group   <run_id>           # 同目录分组 + 共识补空（本地、免费，不联网）
-```
-
-`analyze` 可以随时 `Ctrl-C` 中断，再跑同一条命令就是**续跑**（只补没做完的，不重复花钱）。
-
-### 看待办、做决定
-
-```bash
-uv run mds todo  <run_id> --limit 5          # 待办 4 组（默认只输出 4 行，--limit 才展开明细）
-uv run mds choose <run_id>                   # 列出需要你裁决的专辑
-uv run mds choose <run_id> --folder "某专辑目录" --candidate 0   # 同一张专辑只选一次
-
-uv run mds plan  <run_id> --decisions        # 哪几条需要你决定（带 #编号）
-uv run mds plan  <run_id> --adopt-ai 118 --refresh   # 采纳 AI 对 #118 的判断
-uv run mds plan  <run_id> --keep-existing 118        # 改回来（保留我的）
-uv run mds plan  <run_id> --skip 120 --refresh       # 跳过 #120
-uv run mds plan  <run_id> --pick 130 2 --refresh     # #130 选第 3 个候选（从 0 数起）
-```
-
-### 写入、校验、撤销
-
-```bash
-uv run mds apply    <run_id>          # 只预览（默认 dry-run，不加 --yes 永远不写）
-uv run mds apply    <run_id> --yes    # 真的写
-uv run mds verify   <run_id>          # 重新读文件核对
-uv run mds changes  <run_id>          # 变更记录（含前后 sha256）
-uv run mds rollback <run_id> --yes                        # 一键回滚
-uv run mds rollback <run_id> --batch latest --yes         # 只回滚最近一批（界面的「撤销上一批」）
-uv run mds report   <run_id> --md 建议报告.md --csv 建议报告.csv
-uv run mds runs                       # 历史运行
-```
-
-### 常用参数
-
-| 参数 | 说明 |
+| 分组 | 建议操作 |
 | --- | --- |
-| `--limit N` | 只处理前 N 个文件 |
-| `--new` | 强制新建 run（默认复用未完成的 run，以便续跑） |
-| `--no-llm` | 不调用云端模型（状态标为 `skipped`，之后可用 AI 补跑） |
-| `--retry-errors` | 重试之前失败的条目 |
-| `--refresh-decisions` | 用已缓存结果重算决策（**不重复调用云端、不花钱**） |
-| `--assume-no-album-tag` | 验证用：忽略已有专辑标签，模拟"标签缺失的音乐库" |
-| `--mode full\|no_album\|none` | 给模型的标签证据级别 |
-| `--budget` | 每 100 首的云端预算上限（元），超出即停止云端调用 |
-| `apply --snapshot-mode tags\|full` | 快照模式：`tags`（默认，只存原标签）/ `full`（整文件字节备份） |
-| `apply --skip-integrity` | 跳过写入前的音频/图片指纹比对（大库提速，代价是少一道证据） |
-| `rollback --force` | 即使文件在写入后又被外部改过，也强制回滚（危险） |
+| 🟢 可以写入 | 检查空字段补全与规则清洗的差异，再确认批量写入 |
+| 🟡 需要确认专辑 | 比较发行版候选，按歌曲或专辑选择 |
+| 🟠 标签不一致 | 默认保留已有专辑名；需要更换时显式采纳建议 |
+| ⚪ 无需处理 | 查看未命中、无需改动或被安全规则拦下的条目 |
 
----
+写入后可以使用**撤销上一批**。更完整的操作说明见 [`packaging/使用说明.txt`](packaging/使用说明.txt)。
 
-## 它凭什么保证不弄坏你的音乐
+## 联网与费用
 
-这一节是"只动标签、不动音频"这句话的实际依据，不是承诺：
+| 阶段 | 联网情况 | 费用 |
+| --- | --- | --- |
+| 扫描、目录分组、同目录互证 | 在本地完成 | 不产生云端费用 |
+| AcoustID / MusicBrainz 查询 | 发送指纹或查询所需的元数据 | 不产生模型费用 |
+| DeepSeek 消歧 | 发送候选与标签证据供模型判断 | 按 DeepSeek 服务用量计费 |
+| 标签写入、校验、撤销 | 在本地完成 | 不产生云端费用 |
+
+程序**不上传音频文件本体**。联网分析会发送匹配所需的指纹、标签或候选信息。
+
+模型预算默认是**每 100 首 ¥0.50**，可通过 `.env` 的 `CLOUD_BUDGET_PER_100_TRACKS` 调整。达到预算限制后停止后续模型调用；界面费用为预估值，实际费用以服务商账单为准。
+
+命令行可用 `--no-llm` 跳过 DeepSeek。**这个选项仍会进行 AcoustID / MusicBrainz 查询，并不等于完全离线。** 只需本地处理时，使用 `scan` 与 `group`。
+
+## 写入与撤销
+
+扫描、分析和计划生成都不修改音乐文件。确认写入后，程序按以下流程处理：
 
 ```text
-1. 算原文件的「音频 + 内嵌图片」sha256
-2. 建快照（默认只存原标签，约占文件大小的 0.07%）
-3. 复制一份副本 → 在【副本】上写标签 → 读回校验
-4. 比对副本与原文件的音频/图片 sha256   ← 不一致就中止，此刻原文件还没被碰
-5. os.replace 原子替换（到这一步原文件才变）
-6. 记录变更（含前后 sha256），可按批次回滚
+建立写入前快照 → 在同目录副本上写标签 → 读回校验
+→ 检查完整性 → 原子替换原文件 → 记录变更与批次
 ```
 
-### ⚠️ 写 FLAC 会让文件变小，但那不是数据丢失
+- 保留音乐文件的名称和位置，不执行重命名、移动或删除操作。
+- 默认补空与规则清洗；匹配结果与已有专辑名冲突时，默认保留已有值。
+- CLI 的 `apply` 和 `rollback` 默认只预览，需显式加 `--yes` 才执行。
+- 回滚前检查文件是否在写入后又被外部修改；发现变化时默认跳过。
 
-FLAC 里有一块 **`PADDING`（预留空白）**，是给"将来就地改标签"用的。Picard 重写标签块时
-会把它重算成很小的一块，于是文件更小（实测一首 56.9 MB 的变成 45.6 MB）。
+**完整性校验的范围：** 当前仅 **FLAC** 实现音频数据与内嵌图片的分区 SHA-256 校验，不一致时中止替换。MP3、M4A、OGG 仍采用副本写入、标签读回校验和原子替换，但尚未实现同等的音频/图片分区校验。
 
-**音频与内嵌图片的 sha256 完全不变**（有强制校验）。少的只是预留空白。
+| 快照模式 | 恢复范围 | 空间占用 |
+| --- | --- | --- |
+| `tags`（默认） | 写回快照中记录的原标签；容器字节、填充块或块顺序可能变化 | 通常远小于原音乐文件 |
+| `full` | 从整文件备份逐字节恢复 | 约等于本批次原文件大小 |
 
-### 回滚能回到什么程度
+CLI 可用 `apply --snapshot-mode full` 选择整文件快照。**撤销依赖本机数据库和快照；清空分析数据会删除这些记录，旧批次将无法再撤销。**
 
-| 模式 | 能回到什么程度 |
-| --- | --- |
-| `tags`（默认） | 标签 100% 还原；**音频与图片 sha256 与原文件一致**；文件字节不完全相同（padding/块顺序） |
-| `full` | **逐字节完全一致**（代价：快照与音乐库等大） |
+## 从源码运行
 
----
+建议使用 **Python 3.12** 与 [uv](https://docs.astral.sh/uv/)。项目声明支持 Python `>=3.12,<3.14`，当前环境自检按 3.12 检查。
 
-## 工程结构
+```powershell
+git clone https://github.com/Candelor0/music-data-manager.git
+cd music-data-manager
+uv sync --python 3.12
+uv run mds gui
+```
 
-| 位置 | 说明 |
-| --- | --- |
-| `src/mds/core/` | **纯函数层**：归一化、清洗、差异、候选评分、决策编排。禁止 `import PyQt5 / PyQt6 / picard / httpx`（有测试守卫） |
-| `src/mds/adapters/` | 唯一接触外部世界的地方：限流、指纹、AcoustID、MusicBrainz、模型、读/写标签、快照、凭据库 |
-| `src/mds/storage/` | SQLite：任务、条目、分组、审计、三层缓存（指纹 / 候选 / 模型） |
-| `src/mds/pipeline/` | 编排：扫描 → 分析 → 分组 → 计划 → 写入 → 校验 → 回滚 |
-| `src/mds/ui/` | PyQt5 界面。只经由 `pipeline.apply` / `pipeline.rollback` 这两个受控入口写入，**界面自己没有改文件的能力**（`tests/unit/test_ui_boundaries.py` 用 AST 断言守着） |
-| `src/mds/cli.py` | 入口，只做参数解析与调用 |
-| `tests/unit/` | mock 自动化测试（不联网、不花钱） |
-| `poc/` | 早期的可行性验证脚本（保留备查） |
-| `tools/fpcalc` | 声学指纹计算器（第三方二进制，不入库，用脚本下载） |
-| `assets/` | 应用图标（由 `scripts/make-icon.py` **用代码画**出来，仓库不放美术资源） |
-| `packaging/` | 随发布包发给最终用户的文件（如 `使用说明.txt`） |
+需要声学指纹分析时，还要准备 **Chromaprint 的 `fpcalc`**：
 
-**运行期数据**不落在工程目录里：
+1. 从 [Chromaprint 官方 Releases](https://github.com/acoustid/chromaprint/releases) 下载适合本机平台的 `fpcalc`。
+2. Windows 将解压出的 `fpcalc.exe` 放到项目根目录的 `tools/` 下；macOS 使用 `tools/fpcalc` 并确保可执行。也可将 `fpcalc` 加入 `PATH`。
+3. 在设置页配置服务，或复制 `.env.example` 为 `.env`，填写自己的配置。
 
-- Windows：数据 `%LOCALAPPDATA%\MusicDataManager\音乐数据管家\`，配置 `%APPDATA%\音乐数据管家\`
-- macOS：`~/Library/Application Support/音乐数据管家/`
-- 日志：`<数据目录>/logs/mds.log`（滚动 2MB × 3）
+Windows 发布包已经包含 `fpcalc.exe`，无需另行下载。macOS 也可双击仓库根目录的 `打开界面.command` 启动。
 
----
+> Picard 与界面共用 **PyQt5**。请勿在同一个环境中混装 PyQt6。
 
 ## 密钥与配置
 
-密钥只放本地 `.env`：**不进仓库、不进代码、不进日志、不进前端产物**。日志层有脱敏过滤器，
-即使某处把密钥拼进了消息，落盘前也会被换成 `***`。
+设置页保存的 API Key 优先使用**系统凭据库**（Windows 凭据管理器 / macOS 钥匙串）。凭据库不可用时会退回本地文件，界面会提示明文存储。
 
-- `.env` 是以点开头的隐藏文件（Finder 里按 `Cmd + Shift + .` 显示）
-- 仓库里只提交 `.env.example`（模板，无真值）
-- 优先级：**设置页 > `.env` > 默认值**；设置页里存的密钥进**系统凭据库**，
-  凭据库不可用时退回本地文件，并如实告诉你"这是明文"
+源码与 CLI 用户可复制模板：
 
-| 变量 | 从哪来 | 用途 |
-| --- | --- | --- |
-| `ACOUSTID_API_KEY` | https://acoustid.org/my-applications（**要用"应用"key，不是账号 key**） | 声学指纹查歌 |
-| `DEEPSEEK_API_KEY` | https://platform.deepseek.com | 候选消歧 |
-| `MUSICBRAINZ_USER_AGENT` | 自己填 `应用名/版本 ( 邮箱 )` | MusicBrainz 强制要求 |
-| `MUSIC_LIBRARY_PATH` | 本机音乐库目录 | `mds scan` 的默认目录 |
+```powershell
+Copy-Item .env.example .env
+```
 
-> ⚠️ AcoustID 有两种 key，格式一模一样（10 位字母数字）但用途不同：
-> 账号页 `/api-key` 那把只能**提交**指纹；**查歌必须用 `/my-applications` 里的应用 key**。
-> 用错时服务端只回 `invalid API key`，不告诉你是哪一种 —— 这个坑踩过。
-
----
-
-## 设计约束（改之前先看这里）
-
-这些不是风格偏好，每一条背后都有一次实测或一次事故：
-
-| 约束 | 原因 |
+| `.env` 变量 | 用途 |
 | --- | --- |
-| **AcoustID 每秒最多 2 次** | 产品要求（官方上限 3） |
-| **MusicBrainz 每秒最多 1 次** | 官方要求；全链路瓶颈（1 万首全扫约 3 小时） |
-| 所有网络请求必须经过 `adapters/ratelimit.py` | 唯一出口，绕不过去 |
-| MusicBrainz 查询必须带 `inc=media` | 少了它候选里没有时长，而时长是最强证据 |
-| 模型用 `deepseek-flash` + **关闭思考模式** | 实测输出 token 36→11、耗时 0.9s→0.4s |
-| 提示词**不得**偏好原始发行版 | 实测该倾向会让准确率掉 4 个点 |
-| **不覆盖文件里已有的正确标签** | 用户在真实样例打分时的明确要求 |
-| **不用模型自报置信度做自动决策** | 实测高置信度的 2 条被用户 100% 拒绝 |
-| 证据不足时给候选让用户选 | 同一录音有几十个发行版，机器无法从音频分辨你手上是哪张 |
-| **写入默认 dry-run** | 不加 `--yes` 永远不写文件 |
-| **替换前必须过音频/图片指纹校验** | 让"只动标签"成为证据，而不是承诺 |
-| **回滚前检查文件是否被外部改过** | 免得覆盖用户后来的修改 |
-| **同目录共识只补空字段，绝不覆盖已有值** | 与"不覆盖已有正确标签"同源；实测同一目录就是同一张专辑 |
-| **孤证不算共识（至少 2 首一致）** | 12 首里只有 1 首写了年份，那是孤证不是共识 |
-| **曲名与音轨号不参与同目录互证** | 它们逐文件本来就该不同 |
-| **目录名只用于给候选打分，不作为写入值** | 实测存在"标签比目录名更准"（标签 `假想专辑2000(珍藏版)` vs 文件夹 `假想专辑2000`） |
-| **界面不得直接改文件** | 只能走 `pipeline` 的受控入口（AST 测试保证） |
+| `MUSIC_LIBRARY_PATH` | CLI 扫描的默认音乐库目录 |
+| `MUSICBRAINZ_USER_AGENT` | 例如 `MusicDataManager/0.5.1 ( contact: you@example.com )`，请替换成自己的邮箱 |
+| `ACOUSTID_API_KEY` | [AcoustID 应用 Key](https://acoustid.org/my-applications)，用于查歌 |
+| `DEEPSEEK_API_KEY` | DeepSeek 模型消歧 |
+| `CLOUD_BUDGET_PER_100_TRACKS` | 每 100 首的模型预算上限，单位为元 |
 
----
+设置页保存的 Key 优先于 `.env`；邮箱、音乐库等偏好由 GUI 加载。CLI 建议显式传入目录并配置 `.env`，不要假定所有界面偏好都会被命令行读取。
 
-## 开发
+`.env` 已被 `.gitignore` 排除。不要把真实 Key 放进提交、Issue、截图或日志附件。
 
-```bash
-uv run pytest                 # 557 项 mock 测试（另有 2 项有意跳过）
-uv run ruff check src tests   # 静态检查
-uv run ruff format src tests  # 可选
+## 命令行
+
+以下是 Windows PowerShell 示例。把路径替换成自己的音乐库；运行完成后，将输出的 `run_id` 填入 `$runId`。
+
+```powershell
+# 扫描 → 分组 → 分析 → 生成计划，尚不写入音乐文件
+uv run mds run "D:\Music" --limit 20
+$runId = "替换为输出的 run_id"
+
+# 查看待办与差异
+uv run mds todo $runId --limit 5
+uv run mds plan $runId --show --limit 10
+uv run mds apply $runId
+
+# 确认差异后执行写入，再读回校验
+uv run mds apply $runId --yes
+uv run mds verify $runId
+
+# 查看变更；预览并撤销最近一批
+uv run mds changes $runId
+uv run mds rollback $runId --batch latest
+uv run mds rollback $runId --batch latest --yes
 ```
 
-几条由测试守着的架构约束（改坏了测试会立刻变红）：
-
-- `core/` 不许引入 Qt / Picard / 网络库 —— `tests/unit/test_boundaries.py`
-- 功能层不许反向依赖界面；界面不许直接碰写入链路与文件操作 —— `tests/unit/test_ui_boundaries.py`
-- 界面颜色/字号/间距只能来自 `ui/theme.py` —— `tests/unit/test_theme.py`
-- 许可证文本、依赖清单、打包脚本必须带上许可证 —— `tests/unit/test_licensing.py`
-- 发布包不许夹带本机信息与密钥 —— `tests/unit/test_release_zip.py`
-
-> 界面测试在没人看屏幕的机器上也能跑：`tests/conftest.py` 会自动把 Qt 切到 `offscreen` 平台。
-
----
-
-## 构建与发布
-
-```bash
-uv run python scripts/make-icon.py                 # 画应用图标 → assets/icon.png + icon.ico
-uv run python scripts/build-windows-portable.py    # 打 Windows 便携版（在 macOS 上交叉构建）
-uv run python scripts/build-exe-kit.py             # 打「exe 构建包」（约 2 MB）交给 Windows 机器
-uv run python scripts/make-release-zip.py <构建产物.zip 或 dist 目录>
-                                                   # 收拾成可上传 Release 的版本
-uv run python scripts/ui-preview.py <输出目录>      # 用真实库的 run 出界面预览图
-uv run python scripts/ui-snapshot-metrics.py 图…    # 量截图的明暗分布（防"整体像一张白纸"）
-```
-
-**exe 只能在 Windows 上构建**（PyInstaller 不支持交叉编译）：在 macOS 上跑
-`build-exe-kit.py` 打一个小包，拷到 Windows 解压后双击 `构建exe.bat` 即可。
-
-发布前**必须**再跑一遍 `scripts/make-release-zip.py`。构建脚本产出的 zip 是"给自己用"的：
-里面可能有构建者那台机器的信息（`diagnostics.txt` 就有用户名与路径），也缺 GPL 要求随二进制
-分发的许可证文本。这个脚本会扔掉不该外发的、补上该有的、把中文文件名统一成 UTF-8，
-并在发现本机信息、密钥或缺失文件时**直接拒绝放行**。
-
-> 附件名请用 ASCII：实测 GitHub 会把 Release 附件名里的中文**直接抹掉**
-> （`音乐数据管家-0.5.1-发布版.zip` 上传后变成 `-0.5.1-.zip`，文件完好、名字没了）。
-> 所以脚本产出的是 `mds-<版本>-windows-portable.zip`。包**里面**的目录名仍是中文。
-
----
+分析可用 `Ctrl-C` 中断；再次执行 `uv run mds analyze $runId` 可续跑。更多分步操作、专辑裁决、报告导出与参数说明见[开发指南](docs/development.md#命令行进阶)，每条命令也支持 `--help`。
 
 ## 常见问题
 
-**Q：第一次运行 Windows 弹"Windows 已保护你的电脑"？**
-没有代码签名，属正常。点「更多信息 → 仍要运行」。
+<details>
+<summary><strong>Windows 提示“Windows 已保护你的电脑”怎么办？</strong></summary>
 
-**Q：跑完发现音乐文件变小了？**
-见上文「写 FLAC 会让文件变小」。音频与图片的 sha256 没变，少的只是预留空白。
+当前发布包未做代码签名，首次运行可能触发 SmartScreen。确认下载来源为本仓库 Release，并核对附件提供的 SHA-256 后，可在提示中选择“更多信息 → 仍要运行”。
 
-**Q：想彻底清空，重来一遍？**
-界面设置页有「清空分析数据」（删结果/缓存/快照，**保留密钥与设置，绝不碰音乐文件**）；
-或者直接删掉上面「运行期数据」那个目录。
+</details>
 
-**Q：界面里"上次的结果"是哪来的？**
-都来自数据目录里的数据库。交付的包不带任何数据；看到旧记录说明那是你自己机器上的历史。
+<details>
+<summary><strong>写入后 FLAC 文件变小，是音频丢失了吗？</strong></summary>
 
-**Q：同一个专辑在待办里点很多次很烦？**
-用「按专辑裁决」：同一张专辑选一次，整组跟着走。
+FLAC 的 `PADDING` 是为后续标签修改预留的空白。标签重写可能重新分配这部分空间，使文件变小。程序在替换前检查 FLAC 音频数据与内嵌图片的哈希；不能仅凭文件大小判断音频是否改变。详见[写入与撤销](#写入与撤销)。
 
----
+</details>
 
-## 许可证 / 非官方声明
+<details>
+<summary><strong>明明匹配到歌曲，为什么还要我确认专辑？</strong></summary>
 
-- 本项目以 **GPL-3.0-or-later** 授权，全文见 [`LICENSE`](LICENSE)。
-  继承 MusicBrainz Picard（GPL-2.0-or-later）；因链接 PyQt5（GPL v3），整体按 v3 分发。
-- 第三方组件清单与完整许可证文本见 [`licenses/README.md`](licenses/README.md)。
-- **本项目是第三方衍生作品，与 MusicBrainz / MetaBrainz 基金会 / MusicBrainz Picard 官方
-  以及 Riverbank Computing 均无隶属或背书关系。** 本程序不改写 Picard 本体，只在其上做适配。
-- 发布二进制时必须同时提供完整对应源码（本项目用 git tag + Release 附件满足这一条）。
+同一录音可能被收录在原版、再版或合辑等多个发行版中，音频本身未必能区分你持有哪一版。程序会保留候选，支持按专辑整组裁决；已有专辑名与匹配结果不同时默认保留已有值。
+
+</details>
+
+<details>
+<summary><strong>结果和快照存在哪里？能清空重来吗？</strong></summary>
+
+- Windows：`%LOCALAPPDATA%\MusicDataManager\音乐数据管家\`
+- macOS：`~/Library/Application Support/音乐数据管家/`
+- 日志：数据目录下的 `logs/mds.log`
+
+设置页的“清空分析数据”会删除分析结果、缓存、变更记录与快照，保留密钥、邮箱和界面设置，不修改音乐文件。**清空后，旧批次无法再撤销。**
+
+历史结果保存在本机数据目录，重新解压软件不会清除它们。
+
+</details>
+
+<details>
+<summary><strong>启动或连接失败，如何排查？</strong></summary>
+
+Windows 发布包可双击 `诊断工具.bat`；源码用户可执行 `uv run mds doctor`。自检会检查运行环境、`fpcalc`、数据目录与服务连接，仅报告密钥是否配置。
+
+可通过 [Issues](https://github.com/Candelor0/music-data-manager/issues) 反馈，附软件版本、系统版本、复现步骤与相关错误。分享诊断文件前检查本机路径和用户名，不要附 `.env` 或真实密钥。
+
+</details>
+
+## 开发与反馈
+
+代码结构、架构约束、测试和 Windows 打包流程见[开发指南](docs/development.md)。
+
+欢迎通过 [Issues](https://github.com/Candelor0/music-data-manager/issues) 报告问题或提出建议，也欢迎提交 Pull Request。
+
+## 许可证
+
+本项目以 **GPL-3.0-or-later** 授权，全文见 [`LICENSE`](LICENSE)。项目复用 MusicBrainz Picard 的标签读写层，并使用 PyQt5；第三方组件及许可证见 [`licenses/README.md`](licenses/README.md)。
+
+本项目是第三方衍生作品，与 MusicBrainz、MetaBrainz 基金会、MusicBrainz Picard 官方及 Riverbank Computing 均无隶属或背书关系。项目不改写 Picard 本体，仅在其上进行适配。
+
+分发二进制时需同时提供完整对应源码及要求的许可证材料；本项目通过发布标签与 Release 提供对应源码。
